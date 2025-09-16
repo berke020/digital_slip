@@ -1,0 +1,5 @@
+{
+  "name": "Smart Receipt Analysis",
+  "description": "An intelligent web application to upload, analyze, and manage physical receipts. Using Google Gemini, it converts receipt photos into structured digital data, which is then stored and managed in Firebase Firestore, allowing users to track their expenses efficiently.",
+  "requestFramePermissions": []
+}
