@@ -6,7 +6,8 @@ export type AnalyzedReceiptData = Omit<Receipt, 'id' | 'userId' | 'imageUrl' | '
     items: Omit<ReceiptItem, 'id'>[]
 };
 
-const N8N_WEBHOOK_URL = "/n8n-api/webhook-test/9983e973-517f-49dc-aef6-0a16c186b657";
+// Bu satır, Vercel'e yazdığımız ortam değişkenini okuyacak
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 export const analyzeReceiptWithN8n = async (imageBase64: string): Promise<AnalyzedReceiptData> => {
     try {
