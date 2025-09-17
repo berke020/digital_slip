@@ -3,7 +3,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 // YENİ: Artık n8n servisimizi import ediyoruz
-import { analyzeReceiptWithN8n, AnalyzedReceiptData } from '../services/n8nService'; 
+import { analyzeReceiptWithHuggingFace } from '../services/huggingFaceService';
+import { AnalyzedReceiptData } from '../types';
 import { User } from 'firebase/auth';
 import type { Receipt } from '../types';
 import AnalysisReviewModal from './AnalysisReviewModal';
@@ -98,21 +99,34 @@ const ReceiptUploader: React.FC<ReceiptUploaderProps> = ({ onUploadSuccess, user
         setIsProcessing(true);
         setError(null);
         setAnalyzedData(null);
-
+    
         try {
-            // 1. Resmi sıkıştır
-            const { dataUrl } = await compressImage(file, 1000000);
-            
-            // Base64 string'ini saf olarak al (başındaki 'data:image/jpeg;base64,' kısmını kaldır)
-            const base64String = dataUrl.split(',')[1];
-            
-            setCompressedImageBase64(dataUrl); // Önizleme için tam dataUrl'i sakla
+            // Resmi sıkıştırmaya veya Base64'e çevirmeye gerek yok. Sadece önizleme için URL alalım.
+            const dataUrl = URL.createObjectURL(file);
             setImagePreview(dataUrl);
-
-            // 2. Sıkıştırılmış resmi YENİ n8n servisimizle analiz et
-            const analysisResult = await analyzeReceiptWithN8n(base64String); 
+            setCompressedImageBase64(dataUrl); // Bu değişkeni önizleme için kullanmaya devam edebiliriz.
+    
+            // YENİ: Doğrudan Hugging Face servisine dosyanın kendisini gönderiyoruz.
+            const analysisResult = await analyzeReceiptWithHuggingFace(file);
             
-            setAnalyzedData(analysisResult);
+            // DİKKAT: 'analysisResult' Hugging Face'den gelen ham veridir.
+            // Bunu, 'AnalysisReviewModal'in beklediği formata dönüştürmemiz gerekecek.
+            // Şimdilik bu kısmı geçici olarak loglayıp modal'a boş veri gönderelim.
+            console.log("Analiz sonucu:", analysisResult);
+    
+            // TODO: analysisResult'ı AnalyzedReceiptData formatına dönüştür.
+            const formattedData: AnalyzedReceiptData = {
+                merchantName: analysisResult.store_name || 'Bilinmiyor',
+                transactionDate: analysisResult.date || '',
+                transactionTime: '',
+                items: [], // TODO: analysisResult.menu'den ürünleri çıkar.
+                totalVat: 0,
+                totalAmount: parseFloat(analysisResult.total_price) || 0,
+                category: 'Market',
+                imageBase64: ''
+            };
+    
+            setAnalyzedData(formattedData);
             setShowReviewModal(true);
         } catch (err: any) {
             setError(err.message || 'Bir hata oluştu.');
