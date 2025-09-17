@@ -1,4 +1,4 @@
-// src/services/n8nService.ts (Düzeltilmiş Hali)
+// src/services/n8nService.ts (Düzeltilmiş Son Hali)
 
 import type { Receipt, ReceiptItem } from '../types';
 
@@ -6,16 +6,13 @@ export type AnalyzedReceiptData = Omit<Receipt, 'id' | 'userId' | 'imageUrl' | '
     items: Omit<ReceiptItem, 'id'>[]
 };
 
-// Bu satır, Vercel'e yazdığımız ortam değişkenini okuyacak
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
+// Vercel'deki veya .env.local dosyasındaki değişkeni oku.
+// Eğer hiçbirini bulamazsan, yedek olarak proxy adresini kullan.
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || "/n8n-api/webhook-test/9983e973-517f-49dc-aef6-0a16c186b657";
 
 export const analyzeReceiptWithN8n = async (imageBase64: string): Promise<AnalyzedReceiptData> => {
     try {
-        console.log("n8n Webhook'una istek gönderiliyor...");
-
-        // --- DÜZELTME BAŞLANGICI ---
-        // Ön ek ekleyen satırları kaldırın.
-        // const formattedBase64 = `data:image/jpeg;base64,${imageBase64}`; // BU SATIRI SİLİN
+        console.log("n8n Webhook'una istek gönderiliyor:", N8N_WEBHOOK_URL); // Hata ayıklama için adresi yazdır.
 
         const response = await fetch(N8N_WEBHOOK_URL, {
             method: 'POST',
@@ -23,11 +20,9 @@ export const analyzeReceiptWithN8n = async (imageBase64: string): Promise<Analyz
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                // imageBase64: formattedBase64 // ESKİ KULLANIM
-                imageBase64: imageBase64 // DOĞRU KULLANIM: Gelen saf Base64'ü doğrudan gönder
+                imageBase64: imageBase64
             }),
         });
-        // --- DÜZELTME SONU ---
 
         if (!response.ok) {
             const errorBody = await response.text();
@@ -38,7 +33,6 @@ export const analyzeReceiptWithN8n = async (imageBase64: string): Promise<Analyz
         const data = await response.json();
         console.log("n8n'den gelen ham yanıt:", data);
          
-        // ... dosyanın geri kalanı aynı kalabilir ...
         let ollamaResponseString = data.response; 
          
         if (!ollamaResponseString) {
